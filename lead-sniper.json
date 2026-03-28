@@ -1,0 +1,282 @@
+{
+  "name": "lead-sniper",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "604752a2-2970-4e37-91b7-2b92301b959e",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "url": "https://api.github.com/repos/n8n-io/n8n/stargazers",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authentication",
+              "value": "Bearer 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"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        416,
+        0
+      ],
+      "id": "8499759d-676c-47e1-a658-06de69b0691e",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/users/{{$json[\"login\"]}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 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"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        624,
+        0
+      ],
+      "id": "1f2b14f4-b0f7-40b8-beac-0f86e0cc5268",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "6e0da74d-1da9-4752-b00b-9031c5c95a55",
+              "leftValue": "={{$json[\"followers\"]}}",
+              "rightValue": 100,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            },
+            {
+              "id": "a7ecf76c-de8c-4cfd-b4e3-6998d7bfd5b3",
+              "leftValue": "={{$json[\"public_repos\"]}}",
+              "rightValue": 50,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        832,
+        0
+      ],
+      "id": "811e7c97-0d45-4886-93b2-b66351a2b6c7",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=You are a smart sales assistant.\n\nUser Bio: {{$json[\"bio\"]}}\nCompany: {{$json[\"company\"]}}\n\nWrite a short 1-line personalized pitch explaining why we should connect with them."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        1040,
+        -96
+      ],
+      "id": "15cbf9e1-8731-4839-8f42-5eccf8ceb986",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "8BRIg0y6Za1v7XHc",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hooks.slack.com/services/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",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "=\"HIGH VALUE LEAD DETECTED\\n\\n\" +\n\"Name: \" + ($json.login || \"N/A\") + \"\\n\" +\n\"Company: \" + ($json.company || \"N/A\") + \"\\n\" +\n\"Bio: \" + ($json.bio || \"N/A\") + \"\\n\\n\" +\n\"AI Insight:\\n\" +\n($json.output?.content?.[0]?.text || \"No pitch generated\")"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1376,
+        -80
+      ],
+      "id": "9d662434-49e3-4b7f-b79c-70a3aef72bed",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hooks.slack.com/services/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",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"text\": \"No high-value leads found in this run.\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1008,
+        128
+      ],
+      "id": "8b37e79a-77ae-44a8-a4f2-d5f1b22af178",
+      "name": "HTTP Request3"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"nodes\": [\n    {\n      \"name\": \"GitHub Stargazers\",\n      \"type\": \"httpRequest\",\n      \"parameters\": {\n        \"url\": \"https://api.github.com/repos/n8n-io/n8n/stargazers\"\n      }\n    },\n    {\n      \"name\": \"Get User Details\",\n      \"type\": \"httpRequest\",\n      \"parameters\": {\n        \"url\": \"https://api.github.com/users/{{$json[\\\"login\\\"]}}\"\n      }\n    },\n    {\n      \"name\": \"Filter High Value\",\n      \"type\": \"if\",\n      \"parameters\": {\n        \"conditions\": {\n          \"number\": [\n            {\n              \"value1\": \"{{$json[\\\"followers\\\"]}}\",\n              \"operation\": \"larger\",\n              \"value2\": 100\n            },\n            {\n              \"value1\": \"{{$json[\\\"public_repos\\\"]}}\",\n              \"operation\": \"larger\",\n              \"value2\": 50\n            }\n          ]\n        }\n      }\n    },\n    {\n      \"name\": \"AI Pitch Generator\",\n      \"type\": \"openai\",\n      \"parameters\": {\n        \"prompt\": \"Generate a 1-line sales pitch using bio and company\"\n      }\n    },\n    {\n      \"name\": \"Send to Slack\",\n      \"type\": \"webhook\",\n      \"parameters\": {\n        \"url\": \"YOUR_SLACK_WEBHOOK_URL\"\n      }\n    }\n  ]\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "89298f52-e674-4b20-9a36-78dc85652ee8",
+      "name": "Edit Fields"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a49da3d6-2170-4838-8f7e-796698bd8dde",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b40e38151354082eb8dae7af58dc88da973f118c886bf4c613a31292ee0033f0"
+  },
+  "id": "irR1d956BwyEUjeu",
+  "tags": []
+}
